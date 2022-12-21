@@ -1,9 +1,12 @@
 const express = require("express");
 const cors = require("cors");
-const app = express();
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const nodemailer = require("nodemailer");
+const sgTransport = require("nodemailer-sendgrid-transport");
+
+const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors());
@@ -30,6 +33,44 @@ const verifyJWT = (req, res, next) => {
     next();
   });
 };
+
+const emailSenderOptions = {
+  auth: {
+    api_key: process.env.EMAIL_SENDER_KEY,
+  },
+};
+
+const mailer = nodemailer.createTransport(sgTransport(emailSenderOptions));
+
+function sendAppointmentEmail(booking) {
+  const { patientEmail, patientName, treatment, date, slot } = booking;
+
+  const email = {
+    to: patientEmail,
+    from: process.env.EMAIL_SENDER,
+    subject: `Your Appointment for ${treatment} is on ${date} at ${slot} is Confirmed`,
+    text: `Your Appointment for ${treatment} is on ${date} at ${slot} is Confirmed`,
+    html: `
+    <div>
+      <p>Hello ${patientName},</P>
+      <h3>Your Appointment for ${treatment} is confirmed</h3>
+      <p>Looking forward to seeing you on ${date} at ${slot}.</P>
+
+      <h3>Our Address</h3>
+      <p>Katasur, Kaderabad Housing , Mohammadpur</P>
+      <p>Dhaka, Bangladesh</P>
+      <a href='https://humaiun-kabir-portfolio.netlify.app/'>Unsubscrib</a>
+    </div>
+    `,
+  };
+
+  mailer.sendMail(email, function (err, res) {
+    if (err) {
+      console.log(err);
+    }
+    console.log("Message sent:", res);
+  });
+}
 
 async function run() {
   try {
@@ -97,6 +138,7 @@ async function run() {
         return res.send({ success: false, booking: exists });
       }
       const result = await bookingCollection.insertOne(booking);
+      sendAppointmentEmail(booking);
       return res.send({ success: true, result });
     });
 
