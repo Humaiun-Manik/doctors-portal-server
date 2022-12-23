@@ -133,6 +133,11 @@ async function run() {
     /*---------------------
         Booking API 
     ----------------------*/
+    app.get("/all-booking", async (req, res) => {
+      const bookings = await bookingCollection.find().toArray();
+      res.send(bookings);
+    });
+
     app.get("/booking", verifyJWT, async (req, res) => {
       const patientEmail = req.query.patient;
       const decodedEmail = req.decoded.email;
