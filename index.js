@@ -133,7 +133,7 @@ async function run() {
     /*---------------------
         Booking API 
     ----------------------*/
-    app.get("/all-booking", async (req, res) => {
+    app.get("/all-booking", verifyJWT, verifyAdmin, async (req, res) => {
       const bookings = await bookingCollection.find().toArray();
       res.send(bookings);
     });
